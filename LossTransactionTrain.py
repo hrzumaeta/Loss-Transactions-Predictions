@@ -10,20 +10,23 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, confusion_matrix,roc_auc_score, roc_curve, auc
 from sklearn.externals import joblib
 from scipy.stats import randint as sp_randint
+from matplotlib import pyplot as plt
 from time import time
 from operator import itemgetter
 
 import pandas as pd
-import pyodbc
-import matplotlib.pyplot as plt
 import numpy as np
+import pyodbc
 
 def reader():
+    #The reader function allows the user to bring in data from a database using basic sql commands
+    #There is CTE to deal with a log table of unstructured data and then binning within sql itself
+    #to keep data transformation within the python script to a minimum
     server = ''
     database = ''
     username = ''
     password = ''
-    driver = '{ODBC Driver 13 for SQL Server}'
+    driver = ''
     query = '''
 
     with returns as (
@@ -78,10 +81,20 @@ def reader():
 
 
 def split_dataset(dataset, train_percentage):
+    #The pertinent variables were determined through exploratory data analysis, correlationa analysis and PCA#
+    #Those steps were not shown here, neither was controlling for multicollinearity
+    #Or normalizing the dataset
+    #Or taking care of the class imbalance problem (most transactions aren't losses)
+    #Or optimizing for training and prediction time by using a parallel computing frame work like Dask
+    #The main goal here is just to show how to simply build a classification model from database tables with a bit of data wrangling
+    #And then exposing this model through a REST API
+
+    #Here we define which variables we will choose to train the model
     df=dataset
     include = ['customertier', 'timesreturned', 'shipstate', 'storestate','losstransaction']
     df_=df.filter(items=include)
 
+    #This part turns categorical columns (if any) into dummy columns
     categoricals = []
 
     for col, col_type in df_.dtypes.iteritems(): #iteritems() provides a key value pair, col is key, col_type is value
@@ -94,6 +107,7 @@ def split_dataset(dataset, train_percentage):
     dependent_variable = 'losstransaction'
     x = df_ohe[df_ohe.columns.difference([dependent_variable])]
     y = df_ohe[dependent_variable]
+
     # Split dataset into train and test dataset
     train_x, test_x, train_y, test_y = train_test_split(x,y,train_size=train_percentage)
     return train_x, test_x, train_y, test_y
@@ -101,17 +115,21 @@ def split_dataset(dataset, train_percentage):
 
 def main():
 
+    #Read the data in
     df = reader()
+    #split the dataset
     train_x, test_x, train_y, test_y = split_dataset(df, .7)
 
+    #Build the random forest classifier, and fit it on the training data
     clf = rf(n_estimators=30).fit(train_x, train_y)
-    #print("Train Accuracy :: ",clf.score(train_x,train_y))
-    #print("Test Accuracy :: ",clf.score(test_x,test_y))
+    #Use the model to predict on the test data
     predictions=clf.predict(test_x)
 
+    #For the first five observations, print the actual and predicted values of the test data
     for i in range(0, 5):
            print ("Actual outcome :: {} and Predicted outcome :: {}".format(list(test_y)[i], predictions[i]))
 
+    #Various classification metrics, such as accuracy, a confusion matrix for false and true positives and negatives, and roc score
     print ("Train Accuracy :: ", accuracy_score(train_y, clf.predict(train_x)))
     print ("Test Accuracy  :: ", accuracy_score(test_y, predictions))
     print ("Confusion matrix :: ", confusion_matrix(test_y, predictions))
@@ -133,11 +151,14 @@ def main():
     plt.legend(loc="lower right")
     plt.show()
 
+    #Pickling the model for later use
     joblib.dump(clf, 'lmmodel.pkl')
 
+    #Load the model
     clf = joblib.load('lmmodel.pkl')
 
     global model_columns
+    #Define the column names in the training dataset
     model_columns = list(train_x.columns)
     joblib.dump(model_columns, 'lmmodel_columns.pkl')
     #######
