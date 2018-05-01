@@ -12,15 +12,15 @@ app = Flask(__name__)
 swagger = Swagger(app)
 
 # inputs
-model_directory = 'model'
-model_file_name = '%s/lmmodel.pkl' % model_directory
-model_columns_file_name = '%s/lmmodel_columns.pkl' % model_directory
+modelDirectory = 'model'
+modelFileName = '%s/lmmodel.pkl' % model_directory
+modelColumnsFileName = '%s/lmmodel_columns.pkl' % model_directory
 
 # These will be populated at training time
-model_columns = None
+modelColumns = None
 clf = None
 
-def shutdown_server():
+def shutdownServer():
     func = request.environ.get('werkzeug.server.shutdown')
     if func is None:
         raise RuntimeError('Not running with the Werkzeug Server')
@@ -89,15 +89,15 @@ def post():
 
 @app.route('/shutdown', methods=['GET'])
 def shutdown():
-    shutdown_server()
+    shutdownServer()
     return 'Server shutting down...'
 
 
 if __name__ == '__main__':
     try:
-        clf = joblib.load(model_file_name)
+        clf = joblib.load(modelFileName)
         print ('model loaded')
-        model_columns = joblib.load(model_columns_file_name)
+        model_columns = joblib.load(modelColumnsFileName)
         print ('model columns loaded')
 
     except Exception as e:
