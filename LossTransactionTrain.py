@@ -154,41 +154,5 @@ def main():
     #Pickling the model for later use
     joblib.dump(clf, 'lmmodel.pkl')
 
-    #Load the model
-    clf = joblib.load('lmmodel.pkl')
-
-    global model_columns
-    #Define the column names in the training dataset
-    model_columns = list(train_x.columns)
-    joblib.dump(model_columns, 'lmmodel_columns.pkl')
-    #######
-    def report(grid_scores, n_top=3):
-        top_scores = sorted(grid_scores, key=itemgetter(1), reverse=True)[:n_top]
-        for i, score in enumerate(top_scores):
-            print("Model with rank: {0}".format(i + 1))
-            print("Mean validation score: {0:.3f} (std: {1:.3f})".format(
-                  score.mean_validation_score,
-                  np.std(score.cv_validation_scores)))
-            print("Parameters: {0}".format(score.parameters))
-            print("")
-    # specify parameters and distributions to sample from
-    param_dist = {"max_depth": [3, None],
-                  "max_features": sp_randint(1, 11),
-                  "min_samples_split": sp_randint(2, 11),
-                  "min_samples_leaf": sp_randint(2, 11),
-                  "bootstrap": [True, False],
-                  "criterion": ["gini", "entropy"]}
-
-    # run randomized search
-    n_iter_search = 20
-    random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
-                                       n_iter=n_iter_search)
-
-    start = time()
-    random_search.fit(train_x, train_y)
-    print("RandomizedSearchCV took %.2f seconds for %d candidates"
-          " parameter settings." % ((time() - start), n_iter_search))
-    report(random_search.grid_scores_)
-
 if __name__ == "__main__":
     main()
