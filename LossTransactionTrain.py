@@ -80,12 +80,9 @@ def reader():
     return d_frame;
 
 
-def split_dataset(dataset, train_percentage):
+def splitDataset(dataset, train_percentage):
     #The pertinent variables were determined through exploratory data analysis, correlationa analysis and PCA#
-    #Those steps were not shown here, neither was controlling for multicollinearity
-    #Or normalizing the dataset
-    #Or taking care of the class imbalance problem (most transactions aren't losses)
-    #Or optimizing for training and prediction time by using a parallel computing frame work like Dask
+    #Those steps were not shown here, neither was controlling for multicollinearity and many other steps in the feature engineering process
     #The main goal here is just to show how to simply build a classification model from database tables with a bit of data wrangling
     #And then exposing this model through a REST API
 
