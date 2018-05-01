@@ -76,11 +76,11 @@ def reader():
     where p.revenue-p.cost between -2000 AND 100000 --cleaning for faulty manually inputted user data'''
 
     cnxn = pyodbc.connect('DRIVER='+driver+';PORT=1433;SERVER='+server+';PORT=1443;DATABASE='+database+';UID='+username+';PWD='+ password)
-    d_frame = pd.read_sql_query (query, cnxn)
-    return d_frame;
+    dFrame = pd.read_sql_query (query, cnxn)
+    return dFrame;
 
 
-def splitDataset(dataset, train_percentage):
+def splitDataset(dataset, trainPercentage):
     #The pertinent variables were determined through exploratory data analysis, correlationa analysis and PCA#
     #Those steps were not shown here, neither was controlling for multicollinearity and many other steps in the feature engineering process
     #The main goal here is just to show how to simply build a classification model from database tables with a bit of data wrangling
@@ -94,20 +94,20 @@ def splitDataset(dataset, train_percentage):
     #This part turns categorical columns (if any) into dummy columns
     categoricals = []
 
-    for col, col_type in df_.dtypes.iteritems(): #iteritems() provides a key value pair, col is key, col_type is value
-        if col_type == 'O':
+    for col, colType in df_.dtypes.iteritems(): #iteritems() provides a key value pair, col is key, col_type is value
+        if colType == 'O':
             categoricals.append(col)
         else:
               df_[col].fillna(0, inplace=True)
 
-    df_ohe = pd.get_dummies(df_, columns=categoricals, dummy_na=True)
-    dependent_variable = 'losstransaction'
-    x = df_ohe[df_ohe.columns.difference([dependent_variable])]
-    y = df_ohe[dependent_variable]
+    dfOhe = pd.get_dummies(df_, columns=categoricals, dummy_na=True)
+    dependentVariable = 'losstransaction'
+    x = dfOhe[dfOhe.columns.difference([dependentVariable])]
+    y = dfOhe[dependentVariable]
 
     # Split dataset into train and test dataset
-    train_x, test_x, train_y, test_y = train_test_split(x,y,train_size=train_percentage)
-    return train_x, test_x, train_y, test_y
+    trainX, testX, trainY, testY = train_test_split(x,y,train_size=trainPercentage)
+    return trainX, testX, trainY, testY
 
 
 def main():
@@ -115,30 +115,33 @@ def main():
     #Read the data in
     df = reader()
     #split the dataset
-    train_x, test_x, train_y, test_y = split_dataset(df, .7)
+    trainX, testX, trainY, testY = splitDataset(df, .7)
 
     #Build the random forest classifier, and fit it on the training data
-    clf = rf(n_estimators=30).fit(train_x, train_y)
+    clf = rf(n_estimators=30).fit(trainX, trainY)
     #Use the model to predict on the test data
-    predictions=clf.predict(test_x)
+    predictions=clf.predict(testX)
 
     #For the first five observations, print the actual and predicted values of the test data
     for i in range(0, 5):
-           print ("Actual outcome :: {} and Predicted outcome :: {}".format(list(test_y)[i], predictions[i]))
+
+
+
+           print ("Actual outcome :: {} and Predicted outcome :: {}".format(list(testY)[i], predictions[i]))
 
     #Various classification metrics, such as accuracy, a confusion matrix for false and true positives and negatives, and roc score
-    print ("Train Accuracy :: ", accuracy_score(train_y, clf.predict(train_x)))
-    print ("Test Accuracy  :: ", accuracy_score(test_y, predictions))
-    print ("Confusion matrix :: ", confusion_matrix(test_y, predictions))
-    print ("ROC AUC :: ", roc_auc_score(test_y, predictions))
+    print ("Train Accuracy :: ", accuracy_score(trainY, clf.predict(trainX)))
+    print ("Test Accuracy  :: ", accuracy_score(testY, predictions))
+    print ("Confusion matrix :: ", confusion_matrix(testY, predictions))
+    print ("ROC AUC :: ", roc_auc_score(testY, predictions))
 
-    fpr, tpr, thr = roc_curve(test_y, predictions) #false positive, true positive, threshold
+    fpr, tpr, thr = roc_curve(testY, predictions) #false positive, true positive, threshold
     # Different way of calculating the AUC, helps with the plot
-    roc_auc = auc(fpr, tpr)
+    rocAuc = auc(fpr, tpr)
 
     # Plot of a ROC curve for a specific class
     plt.figure()
-    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % rocAuc)
     plt.plot([0, 1], [0, 1], 'k--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
